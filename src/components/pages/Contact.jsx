@@ -1,78 +1,45 @@
 import {useParams, useSearchParams} from "react-router-dom"
-import {useEffect, useState} from "react"
-import {db} from "../../firebase.config"
-import {doc, getDoc} from "firebase/firestore"
-import {toast} from "react-hot-toast"
+import useFetchLandlord from "../../hooks/useFetchLandlord"
+import {useState} from "react"
+import {Loader} from "../index"
 
-/**
- * @description 🍉 Contact
- * @returns {JSX.Element}
- * @constructor
- */
 const Contact = () => {
-    const [message, setMessage] = useState("")
-    const [landlord, setLandlord] = useState(null)
-    // eslint-disable-next-line
-    const [searchParams, setSearchParams] = useSearchParams()
-
     const {id} = useParams()
+    const {landlord, loading} = useFetchLandlord(id)
+    const [searchParams, setSearchParams] = useSearchParams()
+    const [msg, setMsg] = useState("")
 
-    useEffect(() => {
-        const getLandlord = async () => {
-            const docRef = doc(db, "users", id)
-            const docSnap = await getDoc(docRef)
-            if (docSnap.exists()) {
-                setLandlord(docSnap.data())
-            } else {
-                toast.error("Could not get landlord data")
-            }
-        }
+    if (loading) return <Loader/>
 
-        getLandlord()
-    }, [id])
+    return <section>
+        <h1 className="title-1">Contact Landlord</h1>
 
-    const onChange = (e) => setMessage(e.target.value)
+        {landlord !== null &&
+            <div className="grid justify-items-start gap-2">
+                <p className="font-semibold xl:text-2xl">Contact {landlord?.name}</p>
 
-    return (
-        <div className="pageContainer">
-            <header>
-                <p className="pageHeader">Contact Landlord</p>
-            </header>
+                <form
+                    onSubmit={e => e.preventDefault()}
+                    className="flex flex-col gap-3 items-start w-full">
+                    <label className="font-semibold" htmlFor="message">Message</label>
+                    <textarea
+                        className="bg-white resize-none w-full min-h-[300px] p-3 rounded-lg shadow"
+                        name="message"
+                        id="message"
+                        placeholder="Enter your message..."
+                        value={msg}
+                        onChange={(e) => setMsg(e.target.value)}
+                    />
 
-            {landlord !== null && (
-                <main>
-                    <div className="contactLandlord">
-                        <p className="landlordName">Contact {landlord?.name}</p>
-                    </div>
-
-                    <form className="messageForm">
-                        <div className="messageDiv">
-                            <label htmlFor="message" className="messageLabel">
-                                Message
-                            </label>
-                            <textarea
-                                name="message"
-                                id="message"
-                                className="textarea"
-                                value={message}
-                                onChange={onChange}
-                            />
-                        </div>
-
-                        <a
-                            href={`mailto:${landlord.email}?Subject=${searchParams.get(
-                                "listingName"
-                            )}&body=${message}`}
-                        >
-                            <button type="button" className="primaryButton">
-                                Send Message
-                            </button>
+                    {msg.length !== 0 &&
+                        <a href={`mailto:${landlord.email}?Subject=${searchParams.get("listingName")}&body=${msg}`}>
+                            <button type="button" className="btn btn-primary">Send Message</button>
                         </a>
-                    </form>
-                </main>
-            )}
-        </div>
-    )
+                    }
+                </form>
+            </div>
+        }
+    </section>
 }
 
 export default Contact
